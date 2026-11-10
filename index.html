@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Skoodio Velocity 0 Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one-screen map — phases as rows on an X→Y→Z→0 track, detail panel beside it, trust foundation underneath */
+:root{
+  --bg:#F5F7FA; --surface:#FFFFFF; --ink:#141B26; --ink-2:#465063; --ink-3:#6B7588;
+  --line:#E1E6EE; --line-2:#EEF1F6;
+  --brand:#2E90FA; --brand-ink:#1565C0; --brand-soft:#E7F1FE;
+  --v0:#7A5AF8; --v0-ink:#5B3FD6; --v0-soft:#F1EDFE;
+  --vx:#98A2B3; --vy:#84CAFF; --vz:#2E90FA;
+  --warn:#B54708; --warn-soft:#FEF0E1;
+  --font:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --shadow:0 1px 2px rgb(16 24 40 / .05), 0 8px 24px -12px rgb(16 24 40 / .12);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1119; --surface:#121A25; --ink:#EEF2F8; --ink-2:#B4BDCC; --ink-3:#8A94A6;
+    --line:#243041; --line-2:#1A2330;
+    --brand:#4B9EFF; --brand-ink:#8CC4FF; --brand-soft:#132840;
+    --v0:#9B85FF; --v0-ink:#BDAEFF; --v0-soft:#211B3C;
+    --vx:#667085; --vy:#53B1FD; --vz:#4B9EFF;
+    --warn:#F7A64A; --warn-soft:#2E1F0D;
+    --shadow:0 1px 2px rgb(0 0 0 / .3), 0 8px 24px -12px rgb(0 0 0 / .5);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1119; --surface:#121A25; --ink:#EEF2F8; --ink-2:#B4BDCC; --ink-3:#8A94A6;
+  --line:#243041; --line-2:#1A2330;
+  --brand:#4B9EFF; --brand-ink:#8CC4FF; --brand-soft:#132840;
+  --v0:#9B85FF; --v0-ink:#BDAEFF; --v0-soft:#211B3C;
+  --vx:#667085; --vy:#53B1FD; --vz:#4B9EFF;
+  --warn:#F7A64A; --warn-soft:#2E1F0D;
+  --shadow:0 1px 2px rgb(0 0 0 / .3), 0 8px 24px -12px rgb(0 0 0 / .5);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1360px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{margin:0;text-wrap:balance}
+p{margin:0}
+.mono{font-family:var(--mono)}
+
+/* Header */
+.top{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:end}
+.brandrow{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.brandrow svg{height:20px;width:auto}
+.brandrow .sep{width:1px;height:16px;background:var(--line)}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+h1{font-size:clamp(34px,4.6vw,52px);font-weight:800;letter-spacing:-.035em;line-height:1}
+h1 .zero{color:var(--v0)}
+.lede{margin-top:12px;font-size:15px;color:var(--ink-2);max-width:62ch}
+.tally{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.tally-bar{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--line-2)}
+.tally-bar span{display:block;height:100%}
+.tally-keys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.tk{display:flex;flex-direction:column;gap:2px}
+.tk b{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.tk small{font-size:11.5px;color:var(--ink-3)}
+.swatch{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:1px}
+.drags{font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--line-2);padding-top:10px}
+.drags strong{color:var(--ink);font-weight:600}
+
+/* Scale legend */
+.scale{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.lvl{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
+.lvl.is-0{border-color:color-mix(in srgb, var(--v0) 45%, var(--line));background:var(--v0-soft)}
+.chip{font-family:var(--mono);font-weight:600;font-size:12px;min-width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none;color:#fff}
+.lvl h3{font-size:13px;font-weight:650}
+.lvl p{font-size:12px;color:var(--ink-3);line-height:1.4}
+
+/* Main layout */
+.main{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+
+/* Map */
+.map{padding:6px 0 10px}
+.mrow{display:grid;grid-template-columns:236px minmax(0,1fr);align-items:stretch}
+.mhead{padding:10px 18px 8px;border-bottom:1px solid var(--line)}
+.mhead .pname{padding-block:0}
+.mhead .track{display:grid;grid-template-columns:repeat(4,1fr);min-height:0;align-items:center}
+.mhead .colh{text-align:center;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.mhead .colh.is-0{color:var(--v0-ink)}
+.stage{padding:12px 18px 2px;font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+button.phase{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:236px minmax(0,1fr);width:100%;padding:0 18px;border-radius:0;position:relative}
+button.phase:hover{background:color-mix(in srgb, var(--brand) 5%, transparent)}
+button.phase[aria-pressed="true"]{background:var(--brand-soft)}
+button.phase[aria-pressed="true"]::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:var(--brand)}
+button.phase:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
+.pname{padding:9px 14px 9px 0;min-width:0}
+.pname b{display:block;font-size:13.5px;font-weight:600;line-height:1.3}
+.pname span{display:block;font-size:11.5px;color:var(--ink-3);line-height:1.35;margin-top:2px}
+.pname .flag{color:var(--warn);font-weight:500}
+.track{position:relative;display:grid;grid-template-columns:repeat(4,1fr);min-height:52px}
+.cell{border-left:1px dashed var(--line)}
+.cell:first-child{border-left:0}
+.cell.is-0{background:color-mix(in srgb, var(--v0) 6%, transparent)}
+.seg{position:absolute;top:50%;height:2px;transform:translateY(-50%)}
+.seg.next{background:var(--brand)}
+.seg.far{height:0;border-top:2px dotted color-mix(in srgb, var(--v0) 55%, transparent);background:none}
+.dot{position:absolute;top:50%;transform:translate(-50%,-50%);border-radius:50%}
+.dot.now{width:20px;height:20px;background:var(--brand);box-shadow:0 0 0 4px var(--surface),0 0 0 5px color-mix(in srgb,var(--brand) 35%, transparent)}
+button.phase[aria-pressed="true"] .dot.now{box-shadow:0 0 0 4px var(--brand-soft),0 0 0 5px color-mix(in srgb,var(--brand) 35%, transparent)}
+.dot.next{width:14px;height:14px;background:var(--surface);border:2px solid var(--brand)}
+.dot.goal{width:10px;height:10px;background:var(--v0);opacity:.55}
+.dot.goal.is-next{width:14px;height:14px;opacity:1;background:var(--surface);border:2px solid var(--v0)}
+.lab{position:absolute;top:calc(50% - 22px);transform:translateX(-50%);font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.lab.now{color:var(--brand-ink)}
+.lab.next{color:var(--ink-3)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;padding:12px 18px 4px;border-top:1px solid var(--line-2);margin-top:8px;font-size:11.5px;color:var(--ink-3)}
+.legend i{display:inline-block;vertical-align:-2px;margin-right:6px}
+.lg-now{width:12px;height:12px;border-radius:50%;background:var(--brand)}
+.lg-next{width:11px;height:11px;border-radius:50%;border:2px solid var(--brand)}
+.lg-line{width:22px;height:0;border-top:2px solid var(--brand);vertical-align:3px!important}
+.lg-far{width:22px;height:0;border-top:2px dotted var(--v0);vertical-align:3px!important}
+
+/* Detail panel */
+.detail{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 16px);padding:20px;display:flex;flex-direction:column;gap:18px}
+.d-top{display:flex;flex-direction:column;gap:8px}
+.d-stage{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.d-top h2{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.d-shift{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px 3px 4px;border-radius:99px;border:1px solid var(--line)}
+.pill .chip{min-width:20px;height:20px;font-size:11px;border-radius:99px}
+.arrow{color:var(--ink-3);font-size:13px}
+.sec{display:flex;flex-direction:column;gap:8px}
+.sec h3{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.sec p{font-size:13.5px;color:var(--ink-2);max-width:65ch}
+.tools{display:flex;flex-wrap:wrap;gap:6px}
+.tool{font-size:11.5px;font-weight:500;padding:2px 8px;border-radius:6px;background:var(--line-2);color:var(--ink-2)}
+.friction{font-size:12.5px;color:var(--warn);background:var(--warn-soft);border-radius:8px;padding:8px 10px}
+.friction b{font-weight:600}
+.nextbox{border:1px solid color-mix(in srgb,var(--brand) 35%, var(--line));border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.nextbox > p{font-size:13.5px;color:var(--ink)}
+.opps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.opps li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:8px}
+.opps .n{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--brand-ink);padding-top:2px}
+.opps b{display:block;font-size:13px;font-weight:600}
+.opps span{display:block;font-size:12.5px;color:var(--ink-2);line-height:1.45}
+.zerobox{border-left:2px dotted var(--v0);padding:2px 0 2px 12px}
+.zerobox h3{color:var(--v0-ink)}
+.zerobox p{font-size:12.5px}
+.d-nav{display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line-2);padding-top:14px}
+.d-nav button{font:inherit;font-size:12.5px;font-weight:500;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+.d-nav button:hover{border-color:var(--brand);color:var(--brand-ink)}
+.d-nav button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.d-nav button:disabled{opacity:.4;cursor:default;border-color:var(--line);color:var(--ink-3)}
+
+/* Foundation */
+.found{padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px;border-color:color-mix(in srgb,var(--v0) 30%, var(--line))}
+.found-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap}
+.found-head h2{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.found-head p{font-size:12.5px;color:var(--ink-3);max-width:70ch}
+.pillars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.pillar{border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;background:color-mix(in srgb,var(--v0) 3%, var(--surface))}
+.pillar h3{font-size:14px;font-weight:650;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.assume{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-soft);padding:2px 6px;border-radius:5px;white-space:nowrap}
+.pillar .k{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.pillar p{font-size:12.5px;color:var(--ink-2)}
+.pillar ul{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--ink-2)}
+.foot{font-size:11.5px;color:var(--ink-3);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+@media (max-width:1080px){
+  .main{grid-template-columns:minmax(0,1fr)}
+  .detail{position:static}
+  .top{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:760px){
+  .scale{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pillars{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  .mrow,button.phase{grid-template-columns:minmax(0,1fr)}
+  .mhead .pname{display:none}
+  .mhead{padding-inline:14px}
+  button.phase{padding:0 14px 6px}
+  .pname{padding:10px 0 0}
+  .track{min-height:56px}
+  .track .lab{top:calc(50% - 21px)}
+  .stage{padding-inline:14px}
+  .tally-keys{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion:no-preference){
+  button.phase{transition:background .15s}
+  .detail > *{animation:fade .22s ease}
+  @keyframes fade{from{opacity:.4;transform:translateY(3px)}to{opacity:1;transform:none}}
+}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="brandrow">
+        <svg viewBox="0 0 474 88" aria-label="Skoodio" role="img" style="height:16px"><g fill="var(--brand)"><path d="M35.5759 46.8767L34.0252 46.7574C22.3359 44.9683 20.3081 43.2983 20.3081 40.3164C20.3081 38.2886 22.4551 34.591 32.5939 34.591C43.0904 34.591 47.6231 37.4537 47.6231 42.7019V43.2983H66.1113V42.7019C66.1113 32.4439 60.2666 20.1582 32.5939 20.1582C6.82957 20.1582 1.46201 31.2511 1.46201 40.5549C1.46201 53.9142 13.3899 58.2082 32.5939 60.7131C33.5481 60.8324 34.5023 60.9517 35.4566 61.0709C42.7326 61.9059 49.1737 62.8601 49.1737 67.8699C49.1737 72.2832 42.2555 73.2374 34.9795 73.2374C22.9323 73.2374 18.6382 70.6133 18.6382 64.8879V64.2915H0.0306549V65.6036C-0.0886243 69.0626 -0.0886238 74.6688 4.56326 79.3207C9.93083 84.6882 20.3081 87.4316 35.4566 87.4316C55.9726 87.4316 67.9005 84.2111 67.9005 67.6313C67.9005 51.7672 50.7243 49.143 35.5759 46.8767Z"/><path d="M146.988 20.516H121.82L92.3583 49.6201V1.31207H74.3472V87.3124H92.3583V74.3109L105.36 61.4288L124.206 87.4316H146.75L118.6 48.5466L146.988 20.516Z"/><path d="M173.765 19.3232C153.487 19.3232 136.549 30.4162 136.549 53.4371C136.549 76.5772 153.487 87.4316 173.765 87.4316C194.161 87.4316 211.099 76.9351 211.099 53.4371C211.099 30.1776 194.161 19.3232 173.765 19.3232ZM173.765 70.9711C162.433 70.9711 154.322 65.9614 154.322 53.4371C154.322 40.7935 162.433 35.903 173.765 35.903C185.215 35.903 193.326 41.032 193.326 53.4371C193.326 65.4843 185.215 70.9711 173.765 70.9711Z"/><path d="M252.624 19.3232C232.346 19.3232 215.409 30.4162 215.409 53.4371C215.409 76.5772 232.346 87.4316 252.624 87.4316C273.021 87.4316 289.958 76.9351 289.958 53.4371C289.958 30.1776 273.021 19.3232 252.624 19.3232ZM252.624 70.9711C241.292 70.9711 233.181 65.9614 233.181 53.4371C233.181 40.7935 241.292 35.903 252.624 35.903C264.075 35.903 272.186 41.032 272.186 53.4371C272.186 65.4843 264.075 70.9711 252.624 70.9711Z"/><path d="M351.511 1.31207V30.4162H350.437C345.905 24.4522 338.39 20.516 325.985 20.516C297.716 20.516 294.734 44.2526 294.734 54.0335C294.734 62.9794 297.835 87.4316 325.866 87.4316C338.51 87.4316 346.143 83.9725 350.676 78.1279H351.511V87.4316H369.641V1.31207H351.511ZM331.234 71.9253C313.938 71.9253 312.03 58.8046 312.03 54.0335C312.03 48.7852 313.819 36.1416 331.234 36.1416C346.859 36.1416 350.08 44.9683 350.08 54.0335C350.08 64.1722 346.859 71.9253 331.234 71.9253Z"/><path d="M394.167 87.4316V20.9931H376.156V87.4316H394.167ZM394.167 16.222V0H376.156V16.222H394.167Z"/><path d="M436.668 19.3232C416.39 19.3232 399.453 30.4162 399.453 53.4371C399.453 76.5772 416.39 87.4316 436.668 87.4316C457.065 87.4316 474.002 76.9351 474.002 53.4371C474.002 30.1776 457.065 19.3232 436.668 19.3232ZM436.668 70.9711C425.336 70.9711 417.225 65.9614 417.225 53.4371C417.225 40.7935 425.336 35.903 436.668 35.903C448.119 35.903 456.23 41.032 456.23 53.4371C456.23 65.4843 448.119 70.9711 436.668 70.9711Z"/></g></svg>
+        <span class="sep"></span>
+        <span class="eyebrow">Build &amp; release workflow</span>
+      </div>
+      <h1>Velocity <span class="zero">0</span></h1>
+      <p class="lede">Full AI automation of design, development, deployment and QA of features and the platform, with our faith and comfort in the security, stability and scalability of the platform itself. This map shows where each phase sits today and the next step toward it.</p>
+    </div>
+    <aside class="tally" aria-label="Where the workflow sits today">
+      <div class="tally-bar" id="tallyBar"></div>
+      <div class="tally-keys" id="tallyKeys"></div>
+      <p class="drags"><strong>Biggest drags today:</strong> the frontend is built twice (prototype, then Builder.io rebuild) · QA is manual · bugs are typed into Linear by hand.</p>
+    </aside>
+  </header>
+
+  <section class="scale" id="scale" aria-label="Velocity scale"></section>
+
+  <div class="main">
+    <section class="card map" aria-label="Workflow map">
+      <div class="mrow mhead">
+        <div class="pname"><span class="eyebrow">Phase</span></div>
+        <div class="track" id="colHeads"></div>
+      </div>
+      <div id="rows"></div>
+      <div class="legend">
+        <span><i class="lg-now"></i>Where we are now</span>
+        <span><i class="lg-next"></i>Next step</span>
+        <span><i class="lg-line"></i>Near-term move</span>
+        <span><i class="lg-far"></i>Longer path to Velocity 0</span>
+      </div>
+    </section>
+
+    <aside class="card detail" id="detail" aria-live="polite"></aside>
+  </div>
+
+  <section class="card found" aria-label="Trust foundation">
+    <div class="found-head">
+      <h2>Foundation: the trust that Velocity 0 requires</h2>
+      <p>We only remove humans from the loop once we trust the platform underneath. Each pillar shows where things stand and what would earn that confidence.</p>
+    </div>
+    <div class="pillars" id="pillars"></div>
+  </section>
+
+  <footer class="foot">
+    <span>Skoodio · internal working map for the founders</span>
+    <span>Snapshot · November 2026</span>
+  </footer>
+</div>
+
+<script>
+const LEVELS = [
+  {k:'X', name:'Human / manual', desc:'People do the work by hand.', color:'var(--vx)'},
+  {k:'Y', name:'AI assisted', desc:'AI helps, but a human does the work.', color:'var(--vy)'},
+  {k:'Z', name:'AI generated, human judges', desc:'AI does the work; a human approves it.', color:'var(--vz)'},
+  {k:'0', name:'Velocity 0', desc:'AI does the work with no human in the loop.', color:'var(--v0)'}
+];
+
+const PHASES = [
+  {id:'identify', stage:'Plan', name:'Product / feature identification', now:0, next:1,
+    short:'Founders decide from self-testing and test-user feedback',
+    current:'You and your partner decide what to build. The inputs are your own self-testing, conversations with test users and real coach feedback. Prioritizing is judgment, and the signals live in notes, chats and your heads.',
+    tools:['Founder judgment','Test users','Coach feedback'],
+    nextText:'AI gathers the signals and proposes a ranked list of opportunities. You two still make the call.',
+    opps:[
+      {t:'One feedback inbox', d:'Route test-user and coach feedback into one place (a Linear triage view or an Airtable table) instead of scattered chats.'},
+      {t:'Weekly AI synthesis', d:'Have Claude cluster the week’s feedback into themes, count how often each comes up, and score candidates with RICE or MoSCoW.'},
+      {t:'Product analytics', d:'Add usage tracking (for example PostHog) so you can see where students and coaches drop off, not only what they say.'}
+    ],
+    zero:'Z: AI drafts the roadmap and feature specs from signals; you approve. 0: agents propose small experiments, ship them behind feature flags and keep or kill them against agreed metrics.'},
+
+  {id:'design', stage:'Design', name:'UX / UI design', now:2, next:3,
+    short:'Claude Design makes functional prototypes; James judges',
+    current:'Claude Design generates clickable, functional prototypes on the Skoodio Prototypes canvas, using the Skoodio design system and the connected GitHub repo. You steer with real coach feedback, narrow down several options and approve one.',
+    tools:['Claude Design','Skoodio design system','GitHub repo (read)'],
+    nextText:'Make prototypes production-grade so judging them becomes the only human step, then shrink that step for low-risk changes.',
+    opps:[
+      {t:'One design system for design and code', d:'Keep Skoodio’s tokens and components in one source that both Claude Design and the codebase read, so prototypes use real components.'},
+      {t:'Automated design checks', d:'Have AI review each prototype for accessibility, consistency with the design system and Chrome-only constraints before you see it.'},
+      {t:'Feedback-driven variants', d:'Let AI turn a cluster of coach feedback straight into 2–3 prototype options, so you start at the judging step.'}
+    ],
+    zero:'0: for small UI changes within the design system, AI designs, tests with real usage (A/B or staged rollout) and keeps the winner. You only review new patterns.'},
+
+  {id:'fe-ui', stage:'Build', name:'FE code · UI layer', now:2, next:3,
+    short:'Prototype is rebuilt in Builder.io from a Claude prompt',
+    current:'After you approve a prototype, Claude writes a detailed implementation prompt. You run it in Builder.io, and Builder’s AI rebuilds the UI in the real codebase on a branch, keeping existing styles. AI writes the code and you judge it.',
+    friction:'The UI is built twice: once as a prototype and again in Builder.io. Every rebuild is a chance for drift.',
+    tools:['Claude Design','Claude prompts','Builder.io','GitHub'],
+    nextText:'Build it once. The approved prototype is the production code, or turns into it automatically.',
+    opps:[
+      {t:'Design against the real codebase', d:'Keep the repo connected so prototypes are built from Skoodio’s real components; the handoff then becomes a diff, not a rebuild.'},
+      {t:'Frontend work in Claude Code', d:'Move UI implementation from Builder.io into Claude Code working directly on a branch, so the same agent that understood the prototype writes the code.'},
+      {t:'Visual check on every preview', d:'Compare each Vercel preview against the approved artboards with screenshot diffs, so you judge the result rather than the code.'}
+    ],
+    zero:'0: an agent implements approved designs straight to a preview deploy, passes visual and functional checks, and moves on without a human rebuild.'},
+
+  {id:'fe-logic', stage:'Build', name:'FE code · logic & wiring', now:1, next:2,
+    short:'Partner audits Builder branch and wires data in Cursor',
+    current:'Your partner pulls the Builder.io branch, audits it and wires it into real data, state and Supabase. Cursor helps him write code, but he does the wiring.',
+    tools:['Cursor','Supabase','GitHub'],
+    nextText:'An agent does the wiring against clear data contracts. Your partner reviews the pull request instead of writing it.',
+    opps:[
+      {t:'Clear ownership boundaries', d:'Decide which folders belong to UI (Builder or Claude) and which to logic, so AI-generated UI never collides with hand-written logic.'},
+      {t:'Typed data contracts', d:'Generate TypeScript types from the Supabase schema so an agent can wire UI to data safely and mistakes fail at build time.'},
+      {t:'Ticket-to-PR agents', d:'Assign wiring tasks from Linear to a coding agent (Cursor background agents or Claude Code) that opens a pull request for review.'}
+    ],
+    zero:'0: when types, tests and preview checks all pass, the agent’s wiring merges without a human review.'},
+
+  {id:'backend', stage:'Build', name:'Backend', now:1, next:2,
+    short:'Partner builds Supabase with Cursor assistance',
+    current:'Your partner designs and builds the Supabase backend (schema, policies and functions) with Cursor assisting. He authors the changes and carries the context.',
+    tools:['Supabase','Cursor'],
+    nextText:'AI drafts migrations, row-level security policies and functions from a spec. Your partner reviews and approves them.',
+    opps:[
+      {t:'Spec-first changes', d:'For each Linear ticket, have AI write a short technical spec and migration plan before any code, so review happens early.'},
+      {t:'Preview databases', d:'Use Supabase branching so each pull request gets its own database to test migrations against, never shared dev data.'},
+      {t:'Automated advisors', d:'Run Supabase’s security and performance advisors on every change to catch missing policies or slow queries.'}
+    ],
+    zero:'0: additive, non-breaking migrations run automatically once checks pass. Only destructive or schema-breaking changes need a human.'},
+
+  {id:'merge', stage:'Integrate', name:'Code merge', now:1, next:2,
+    short:'Partner reviews and merges; tests being added',
+    current:'Builder.io pushes branches to GitHub, and your partner reviews and merges them in Cursor. Automated tests are being added to catch bugs and regressions. Merge conflicts at the Builder.io / GitHub boundary are a known pain point.',
+    friction:'Edits to Builder-managed files cause merge conflicts.',
+    tools:['GitHub','Cursor','Builder.io','Automated tests (in progress)'],
+    nextText:'AI reviews every pull request and tests must pass before merging. Your partner gives the final approval.',
+    opps:[
+      {t:'AI pull-request review', d:'Add an AI reviewer (Cursor Bugbot, CodeRabbit or Claude Code in GitHub Actions) that comments on every pull request.'},
+      {t:'Required CI checks', d:'Run lint, type check and tests in GitHub Actions and make them required to merge.'},
+      {t:'Code owners', d:'Use a CODEOWNERS file that matches the ownership boundaries, so Builder’s files and your partner’s files stop overlapping.'}
+    ],
+    zero:'0: low-risk pull requests auto-merge when AI review, tests and preview checks are all green.'},
+
+  {id:'qa', stage:'Integrate', name:'QA / testing', now:0, next:1,
+    short:'Founders click through by hand; test users catch the rest',
+    current:'You both test features by clicking through them in Chrome, and test users find what you miss. Automated tests are just starting.',
+    tools:['Manual testing','Test users','Chrome'],
+    nextText:'AI writes and runs tests for core flows on every build. You still test by hand for feel.',
+    opps:[
+      {t:'End-to-end tests for core flows', d:'Use Playwright in Chrome to test upload, recording a reaction and payment, including the WebRTC paths Skoodio depends on.'},
+      {t:'Tests from acceptance criteria', d:'Have AI generate tests from each Linear ticket’s acceptance criteria as part of the feature itself.'},
+      {t:'Test every preview', d:'Run the suite automatically against each Vercel preview deploy before anything reaches staging.'}
+    ],
+    zero:'Z: an AI agent explores each preview in a real browser and files what it finds; you confirm. 0: failing checks block the release on their own.'},
+
+  {id:'deploy', stage:'Ship', name:'Deployment', now:1, next:2,
+    short:'One-click to dev, staging, production; humans decide',
+    current:'You can deploy to dev, staging and production with one click on Vercel and Supabase. The pipeline is automated, but a person decides when to promote and checks the result.',
+    tools:['Vercel','Supabase','Dev · Staging · Production'],
+    nextText:'The pipeline promotes builds on its own when checks pass. A human approves production releases.',
+    opps:[
+      {t:'Automatic staging', d:'Promote to staging automatically when CI and preview tests pass, so manual clicks are only for production.'},
+      {t:'Feature flags', d:'Ship code dark and turn features on for a few coaches first, separating deploying from releasing.'},
+      {t:'Smoke tests and rollback', d:'Run quick checks right after each production deploy and use instant rollback if they fail.'}
+    ],
+    zero:'0: continuous deployment with gradual rollout and automatic rollback when errors spike.'},
+
+  {id:'bugs', stage:'Operate', name:'Bug tracking', now:1, next:2,
+    short:'Found by us and test users, typed into Linear by hand',
+    flag:'Capture is manual: borderline X',
+    current:'Bugs come from your own testing and from test users. You type them into Linear by hand, and AI does little to capture them today.',
+    tools:['Linear','Test users'],
+    nextText:'Bugs are captured automatically with context. AI files and triages them, and you confirm priority.',
+    opps:[
+      {t:'Error monitoring to Linear', d:'Add Sentry to the frontend and backend so errors, including WebRTC failures, create Linear issues automatically.'},
+      {t:'In-app bug reports', d:'A "report a problem" button that attaches console logs and a session replay, so the Linear ticket arrives already filled in.'},
+      {t:'AI triage', d:'Use Linear’s AI triage to suggest labels, spot duplicates and route issues.'}
+    ],
+    zero:'0: AI detects issues, removes duplicates, ranks them by how many users they affect and hands them straight to a fixing agent.'},
+
+  {id:'resolve', stage:'Operate', name:'Resolution', now:1, next:2,
+    short:'Partner diagnoses and fixes in Cursor',
+    current:'Your partner diagnoses and fixes bugs in Cursor. AI helps write the fix, but a human finds the cause, makes the change and verifies it.',
+    tools:['Cursor','Linear'],
+    nextText:'An agent picks up a Linear issue, finds the cause and opens a fix with a test. Your partner reviews it.',
+    opps:[
+      {t:'Assign bugs to agents', d:'Send Linear issues to a coding agent (Cursor or Claude Code) that opens a pull request with the proposed fix.'},
+      {t:'AI root-cause analysis', d:'Use Sentry’s AI debugging on captured errors to point at the likely cause before anyone opens the code.'},
+      {t:'Every fix adds a test', d:'Require a regression test with each fix so the same bug can’t come back silently.'}
+    ],
+    zero:'0: for low-severity bugs, the agent fixes, tests, ships and closes the ticket. You see a weekly summary.'}
+];
+
+const PILLARS = [
+  {name:'Security',
+    now:'Relies on Supabase authentication and database policies, plus your partner’s review. As far as this map knows, no automated security checks run in the pipeline yet.',
+    earn:['Row-level security on every table, checked by Supabase’s advisor','Dependency and secret scanning on each pull request (for example Dependabot)','An AI security review step for auth, payment and upload code','A periodic outside review before removing human approval']},
+  {name:'Stability',
+    now:'Automated tests are just starting. Regressions are mostly caught by people, and the Chrome-only WebRTC recorder is the most fragile surface.',
+    earn:['Test coverage of core flows: upload, record, review and pay','Error monitoring with alerts (for example Sentry)','Feature flags and instant rollback for every release','A staging soak period before production']},
+  {name:'Scalability',
+    now:'Vercel and Supabase are managed services that scale on demand, but video upload, compression and storage haven’t been load-tested.',
+    earn:['Load tests on uploads and concurrent recordings (for example k6)','Usage and cost alerts for Supabase storage and bandwidth','Video size and length caps enforced in the browser before upload','Dashboards for latency and error rate by flow']}
+];
+
+const $ = s => document.querySelector(s);
+const pos = i => `${(i + .5) * 25}%`;
+let sel = 0;
+try { const s = localStorage.getItem('v0-sel'); if (s !== null && PHASES[+s]) sel = +s; } catch (e) {}
+
+function chip(i){ return `<span class="chip" style="background:${LEVELS[i].color}">${LEVELS[i].k}</span>`; }
+
+// Tally
+const counts = [0,0,0,0]; PHASES.forEach(p => counts[p.now]++);
+$('#tallyBar').innerHTML = counts.map((c,i)=> c ? `<span style="width:${c/PHASES.length*100}%;background:${LEVELS[i].color}" title="${c} at ${LEVELS[i].k}"></span>` : '').join('');
+$('#tallyKeys').innerHTML = counts.map((c,i)=>`<div class="tk"><b>${c}</b><small><span class="swatch" style="background:${LEVELS[i].color}"></span>at ${i===3?'Velocity 0':'Velocity '+LEVELS[i].k}</small></div>`).join('');
+
+// Scale
+$('#scale').innerHTML = LEVELS.map((l,i)=>`<div class="lvl ${i===3?'is-0':''}">${chip(i)}<div><h3>${i===3?'Velocity 0':'Velocity '+l.k} · ${i===3?'No human in the loop':l.name}</h3><p>${l.desc}</p></div></div>`).join('');
+
+// Column heads
+$('#colHeads').innerHTML = LEVELS.map((l,i)=>`<div class="colh ${i===3?'is-0':''}">${i===3?'Velocity 0':l.k}</div>`).join('');
+
+// Rows
+function track(p){
+  const n = p.now, x = p.next;
+  let h = LEVELS.map((_,i)=>`<div class="cell ${i===3?'is-0':''}"></div>`).join('');
+  if (x < 3) h += `<div class="seg far" style="left:${pos(x)};width:${(3-x)*25}%"></div>`;
+  h += `<div class="seg next" style="left:${pos(n)};width:${(x-n)*25}%"></div>`;
+  h += x < 3 ? `<div class="dot goal" style="left:${pos(3)}"></div><div class="dot next" style="left:${pos(x)}"></div>`
+             : `<div class="dot goal is-next" style="left:${pos(3)}"></div>`;
+  h += `<div class="dot now" style="left:${pos(n)}"></div>`;
+  h += `<span class="lab now" style="left:${pos(n)}">Now</span><span class="lab next" style="left:${pos(x)}">Next</span>`;
+  return `<div class="track" aria-hidden="true">${h}</div>`;
+}
+let html = '', lastStage = '';
+PHASES.forEach((p,i)=>{
+  if (p.stage !== lastStage){ html += `<div class="stage">${p.stage}</div>`; lastStage = p.stage; }
+  html += `<button class="phase" type="button" data-i="${i}" aria-pressed="false" aria-label="${p.name}: now Velocity ${LEVELS[p.now].k}, next Velocity ${LEVELS[p.next].k}">
+    <div class="pname"><b>${p.name}</b><span>${p.short}${p.flag?` · <span class="flag">${p.flag}</span>`:''}</span></div>${track(p)}</button>`;
+});
+$('#rows').innerHTML = html;
+$('#rows').addEventListener('click', e => { const b = e.target.closest('button.phase'); if (b) select(+b.dataset.i, true); });
+
+function lvlName(i){ return i===3 ? 'Velocity 0' : 'Velocity ' + LEVELS[i].k; }
+
+function select(i, scroll){
+  sel = i;
+  try { localStorage.setItem('v0-sel', String(i)); } catch (e) {}
+  document.querySelectorAll('button.phase').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.i === i)));
+  const p = PHASES[i];
+  $('#detail').innerHTML = `
+    <div class="d-top">
+      <span class="d-stage">${p.stage} · Phase ${i+1} of ${PHASES.length}</span>
+      <h2>${p.name}</h2>
+      <div class="d-shift">
+        <span class="pill">${chip(p.now)}Now: ${lvlName(p.now)}</span>
+        <span class="arrow">→</span>
+        <span class="pill">${chip(p.next)}Next: ${lvlName(p.next)}</span>
+      </div>
+    </div>
+    <div class="sec">
+      <h3>Current state</h3>
+      <p>${p.current}</p>
+      ${p.friction ? `<p class="friction"><b>Friction:</b> ${p.friction}</p>` : ''}
+      ${p.flag ? `<p class="friction"><b>Note:</b> ${p.flag}. Labeled Y here, but nothing in capture is AI-assisted yet.</p>` : ''}
+      <div class="tools">${p.tools.map(t=>`<span class="tool">${t}</span>`).join('')}</div>
+    </div>
+    <div class="nextbox">
+      <h3 class="eyebrow" style="color:var(--brand-ink)">Future state · ${lvlName(p.next)}</h3>
+      <p>${p.nextText}</p>
+      <ol class="opps">${p.opps.map((o,k)=>`<li><span class="n">0${k+1}</span><div><b>${o.t}</b><span>${o.d}</span></div></li>`).join('')}</ol>
+    </div>
+    ${p.next < 3 || p.zero ? `<div class="sec zerobox"><h3>Path to Velocity 0</h3><p>${p.zero}</p></div>` : ''}
+    <div class="d-nav">
+      <button type="button" id="prevB" ${i===0?'disabled':''}>← Previous phase</button>
+      <button type="button" id="nextB" ${i===PHASES.length-1?'disabled':''}>Next phase →</button>
+    </div>`;
+  $('#prevB').onclick = () => select(Math.max(0, sel-1), true);
+  $('#nextB').onclick = () => select(Math.min(PHASES.length-1, sel+1), true);
+  if (scroll && window.matchMedia('(max-width:1080px)').matches) $('#detail').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea')) return;
+  if (e.key === 'ArrowDown' && document.activeElement?.classList.contains('phase')) { e.preventDefault(); const n = Math.min(PHASES.length-1, sel+1); select(n); document.querySelector(`button.phase[data-i="${n}"]`).focus(); }
+  if (e.key === 'ArrowUp' && document.activeElement?.classList.contains('phase')) { e.preventDefault(); const n = Math.max(0, sel-1); select(n); document.querySelector(`button.phase[data-i="${n}"]`).focus(); }
+});
+
+// Pillars
+$('#pillars').innerHTML = PILLARS.map(p=>`<div class="pillar">
+  <h3>${p.name}<span class="assume">Confirm with partner</span></h3>
+  <div><div class="k">Today</div><p>${p.now}</p></div>
+  <div><div class="k">What earns confidence</div><ul>${p.earn.map(e=>`<li>${e}</li>`).join('')}</ul></div>
+</div>`).join('');
+
+select(sel);
+</script>
+
+</body>
+</html>
